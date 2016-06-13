@@ -86,7 +86,7 @@ Includes
 #include "debug.h"
 #include "music.h"
 #include "user_app.h"
-
+#include "user_app2.h"
 
 /**********************************************************************************************************************
 !!!!! External peripheral assignments
