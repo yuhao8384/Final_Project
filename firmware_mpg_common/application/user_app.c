@@ -55,9 +55,6 @@ Variable names shall start with "UserApp_" and be declared as static.
 ***********************************************************************************************************************/
 static fnCode_type UserApp_StateMachine;            /* The state machine function pointer */
 
-static u32 UserApp_u32DataMsgCount = 0;   /* ANT_DATA packets received */
-static u32 UserApp_u32TickMsgCount = 0;   /* ANT_TICK packets received */
-
 static u8 u8CursorPosition = 0;           
 /**********************************************************************************************************************
 Function Definitions
@@ -71,13 +68,15 @@ Function Definitions
 /*--------------------------------------------------------------------------------------------------------------------*/
 /* Protected functions                                                                                                */
 /*--------------------------------------------------------------------------------------------------------------------*/
+/*The function of decryption*/
 static void u8Decrypt(u8 *u8String1, u8 *u8String2)
 {
-  u8 u8StringTemp[] = "**********";
-  for(u8 i = 0; i<10;i++)
-  {
-    u8StringTemp[i] = '\0';
-  }
+  u8 u8StringTemp[8];
+ for(u8 i = 0; i < 8; i++)
+ {
+   u8String2[i] = 0;
+   u8StringTemp[i] = 0;
+ }
   for(u8 j = 0; j < strlen(u8String1); j++)
   {
     u8StringTemp[j] = u8String1[j];
@@ -107,7 +106,6 @@ void UserAppInitialize(void)
   LCDCommand(LCD_CLEAR_CMD);
    /* Home the cursor */
   LCDCommand(LCD_HOME_CMD);
-  
   /*Display the cursor */
   LCDCommand(LCD_DISPLAY_CMD | LCD_DISPLAY_ON | LCD_DISPLAY_CURSOR | LCD_DISPLAY_BLINK);
 
@@ -170,13 +168,14 @@ State Machine Function Definitions
 /* Wait for a message to be queued */
 static void UserAppSM_Idle(void)
 {
-  static u8 au8DataContent[1000];/*Buffer of Data*/
+  static u8 au8DataContent[BufferSize];        /*Buffer of Data*/
   static u8* au8DataContent_Pointer = au8DataContent;
-  static bool bEND = FALSE; /*The END of a communication*/
-  static u8 i ; /*A variable for the loop*/
+  static bool bEND = FALSE;                    /*The END of a communication*/
+  static u8 i ;                                /*A variable for the loop*/
   static u8 AfterDecrypt[8];
+  static u16 TotalChars;                       /*The total chars of a communication */
 
-    /* Look for BUTTON 3 to open channel */
+   /* Look for BUTTON 3 to open channel */
   if(WasButtonPressed(BUTTON3))
   {
     /* Got the button, so complete one-time actions  */
@@ -187,35 +186,51 @@ static void UserAppSM_Idle(void)
     LedOff(RED);
     LedOn(BLUE);
   }
-  
-  
-  
+     
  /*Always check the message*/ 
   if( AntReadData() )
   {
     /* New data message: check what it is */
     if(G_eAntApiCurrentMessageClass == ANT_DATA)
     {
-          u8Decrypt(G_au8AntApiCurrentData,AfterDecrypt);
-         /*whether it is a new message*/
-        if( strcmp(AfterDecrypt,au8DataContent_Pointer - i) != 0 )
+     /*Decrypt the message*/
+      u8Decrypt(G_au8AntApiCurrentData,AfterDecrypt);
+                   
+       /*whether it is a new message*/
+        if( (strcmp(AfterDecrypt,au8DataContent_Pointer - i) != 0) )
+        {  
+
+          /*if it's the next communication, home the pointer and clear the buffer*/
+          if( *(au8DataContent_Pointer - 1) = '#' )
           {
-           
-              i=0;
-              LedBlink( YELLOW, LED_4HZ );
+            for(u8 j = 0; j < TotalChars; j++)
+            {
+              au8DataContent[j] = 0;
+            }
+            au8DataContent_Pointer = au8DataContent;               
+          }
           
-             /*It's new, so add it to au8DataContent*/
-            while( AfterDecrypt[i] != '\0' )
+            i=0;
+            LedBlink( YELLOW, LED_4HZ );               /*The sender is typing*/
+        
+           /*It's new, so add it to au8DataContent*/
+          while( AfterDecrypt[i] != '\0' )
+          {
+            if( TotalChars < BufferSize )
             {
               *au8DataContent_Pointer = AfterDecrypt[i];
-              if(AfterDecrypt[i] == '#') /*Look for '#' to finish*/
+              
+              if( AfterDecrypt[i] == '#' )             /*Look for '#' to finish*/
               {
                 bEND = TRUE;
-                LedBlink( GREEN, LED_4HZ );
+                LedBlink( GREEN, LED_4HZ );            /*The sender stops typing*/
                 LedOff(YELLOW);
               }
               i++;
               
+              TotalChars++;
+              
+              /*Display the letter instantly*/
               LCDMessage(LINE1_START_ADDR + u8CursorPosition, au8DataContent_Pointer);
    
               au8DataContent_Pointer++;        
@@ -228,20 +243,56 @@ static void UserAppSM_Idle(void)
               else if(u8CursorPosition == LINE2_END_ADDR)
               {
                 u8CursorPosition = LINE1_START_ADDR;
-                  /*Clear the screen*/
-                  LCDCommand(LCD_CLEAR_CMD);
+                
+                /*Clear the screen*/
+                LCDCommand(LCD_CLEAR_CMD);
               }
               else
               {
                 u8CursorPosition++;
               }
-            }           
-         }
-      
-       
+            }
+            else              /*The buffer of data is full,so clear it and initialize relevant variables*/
+            {
+              /*Tell the sender do not send new message!*/
+              AntQueueBroadcastMessage("FULL!");
+              
+              /*Show that the last message will display again*/
+              LCDMessage(LINE1_START_ADDR + u8CursorPosition, "!");         
+              
+              /*The cursor moves forward*/
+              if( u8CursorPosition == LINE1_END_ADDR ) 
+              {
+                u8CursorPosition = LINE2_START_ADDR;
+              }
+              else if(u8CursorPosition == LINE2_END_ADDR)
+              {
+                u8CursorPosition = LINE1_START_ADDR;
+                
+                /*Clear the screen*/
+                LCDCommand(LCD_CLEAR_CMD);
+              }
+              else
+              {
+                u8CursorPosition++;
+              }
+              
+              AfterDecrypt[i] = '\0' ;
+              i = 0;
+              
+              /*Clear the buffer*/
+             for(u8 j = 0; j < TotalChars; j++)
+             {
+               au8DataContent[j] = 0;
+             }
+             au8DataContent_Pointer = au8DataContent;
+                         
+              TotalChars = 0;                           /*Clear the number*/                  
+            }
+          }
+        }               
     }
   }
-  
   
  /*The END of a communication*/
  if( bEND == TRUE ) 
@@ -252,19 +303,18 @@ static void UserAppSM_Idle(void)
       ButtonAcknowledge(BUTTON0);
       LedOff(GREEN);
       
+      TotalChars = 0;                                       /*Clear the number*/
+      
       /*send acknowledge message*/
-      AntQueueBroadcastMessage("shadiao!");/*Copy That!*/
+      AntQueueBroadcastMessage("CT!");                            /*Copy That!*/
     }
-}
-    
-
-    
+}    
   
   /*Look for BUTTON 1 to clear the screen*/
       if(WasButtonPressed(BUTTON1))
     { 
        ButtonAcknowledge(BUTTON1);
-      /*Clear the  and screen*/
+      /*Clear the screen*/
       LCDCommand(LCD_CLEAR_CMD);
       u8CursorPosition = 0;
     }
@@ -275,7 +325,6 @@ static void UserAppSM_Idle(void)
       /* Got the button, so complete one-time actions  */
       ButtonAcknowledge(BUTTON2);
       
-      au8DataContent_Pointer = au8DataContent;/*Home the Pointer*/
       AntCloseChannel();
       LedOff(BLUE);
       LedOn(RED);
