@@ -41,6 +41,8 @@ the 1ms period.
 
 void main(void)
 {
+  static u8 ModeSelectFlag = 0;  /*Flag for seclection*/
+  
   G_u32SystemFlags |= _SYSTEM_INITIALIZING;
 
   /* Low level initialization */
@@ -67,8 +69,28 @@ void main(void)
   SdCardInitialize();
 
   /* Application initialization */
-    UserAppInitialize();
-    UserApp2Initialize();
+  LCDCommand(LCD_CLEAR_CMD);
+  LCDMessage(LINE1_START_ADDR,"Select the mode:");
+  LCDMessage(LINE2_START_ADDR,"0:Receiver  1:Sender");
+  
+  /*Select to be Receiver(1) or Sender(2)*/
+   while(ModeSelectFlag == 0) 
+   {
+      ButtonRunActiveState();
+     if(WasButtonPressed(BUTTON0))
+      {
+        ButtonAcknowledge(BUTTON0);
+        UserAppInitialize();
+        ModeSelectFlag = 1;
+      }
+     else if(WasButtonPressed(BUTTON1))
+     {
+       ButtonAcknowledge(BUTTON1);
+       UserApp2Initialize();
+       ModeSelectFlag = 2;
+     }
+   }
+
   /* Exit initialization */
   SystemStatusReport();
   G_u32SystemFlags &= ~_SYSTEM_INITIALIZING;
@@ -91,8 +113,14 @@ void main(void)
     SdCardRunActiveState();
 
     /* Applications */
-    UserAppRunActiveState();
-    UserApp2RunActiveState();
+    if(ModeSelectFlag == 1)
+    {
+      UserAppRunActiveState();
+    }
+    else if(ModeSelectFlag == 2)
+    {
+      UserApp2RunActiveState();
+    }
     /* System sleep*/
     HEARTBEAT_OFF();
     SystemSleep();

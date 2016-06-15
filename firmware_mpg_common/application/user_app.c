@@ -68,7 +68,15 @@ Function Definitions
 /*--------------------------------------------------------------------------------------------------------------------*/
 /* Protected functions                                                                                                */
 /*--------------------------------------------------------------------------------------------------------------------*/
-/*The function of decryption*/
+/*--------------------------------------------------------------------------------------------------------------------
+Function: u8Decrypt
+Description:
+Decrypt the received message.
+Requires:
+  -
+Promises:
+  - 
+*/
 static void u8Decrypt(u8 *u8String1, u8 *u8String2)
 {
   u8 u8StringTemp[8];
@@ -102,7 +110,7 @@ Promises:
 */
 void UserAppInitialize(void)
 {
-  /*Clear the screen*/
+   /*Clear the screen*/
   LCDCommand(LCD_CLEAR_CMD);
    /* Home the cursor */
   LCDCommand(LCD_HOME_CMD);
@@ -172,8 +180,8 @@ static void UserAppSM_Idle(void)
   static u8* au8DataContent_Pointer = au8DataContent;
   static bool bEND = FALSE;                    /*The END of a communication*/
   static u8 i ;                                /*A variable for the loop*/
-  static u8 AfterDecrypt[8];
-  static u16 TotalChars;                       /*The total chars of a communication */
+  static u8 au8AfterDecrypt[8];                   
+  static u16 u16TotalChars;                    /*The total chars of a communication */
 
    /* Look for BUTTON 3 to open channel */
   if(WasButtonPressed(BUTTON3))
@@ -194,16 +202,18 @@ static void UserAppSM_Idle(void)
     if(G_eAntApiCurrentMessageClass == ANT_DATA)
     {
      /*Decrypt the message*/
-      u8Decrypt(G_au8AntApiCurrentData,AfterDecrypt);
+      u8Decrypt(G_au8AntApiCurrentData,au8AfterDecrypt);
                    
        /*whether it is a new message*/
-        if( (strcmp(AfterDecrypt,au8DataContent_Pointer - i) != 0) )
+        if( (strcmp(au8AfterDecrypt,au8DataContent_Pointer - i) != 0) )
         {  
-
+          /*Tell the sender that the new message was received*/
+          AntQueueBroadcastMessage("RD!");
+          
           /*if it's the next communication, home the pointer and clear the buffer*/
           if( *(au8DataContent_Pointer - 1) = '#' )
           {
-            for(u8 j = 0; j < TotalChars; j++)
+            for(u8 j = 0; j < u16TotalChars; j++)
             {
               au8DataContent[j] = 0;
             }
@@ -211,16 +221,16 @@ static void UserAppSM_Idle(void)
           }
           
             i=0;
-            LedBlink( YELLOW, LED_4HZ );               /*The sender is typing*/
+            LedBlink( YELLOW, LED_4HZ );                /*The sender is typing*/
         
            /*It's new, so add it to au8DataContent*/
-          while( AfterDecrypt[i] != '\0' )
+          while( au8AfterDecrypt[i] != '\0' )
           {
-            if( TotalChars < BufferSize )
+            if( u16TotalChars < BufferSize )
             {
-              *au8DataContent_Pointer = AfterDecrypt[i];
+              *au8DataContent_Pointer = au8AfterDecrypt[i];
               
-              if( AfterDecrypt[i] == '#' )             /*Look for '#' to finish*/
+              if( au8AfterDecrypt[i] == '#' )             /*Look for '#' to finish*/
               {
                 bEND = TRUE;
                 LedBlink( GREEN, LED_4HZ );            /*The sender stops typing*/
@@ -228,7 +238,7 @@ static void UserAppSM_Idle(void)
               }
               i++;
               
-              TotalChars++;
+              u16TotalChars++;
               
               /*Display the letter instantly*/
               LCDMessage(LINE1_START_ADDR + u8CursorPosition, au8DataContent_Pointer);
@@ -254,7 +264,7 @@ static void UserAppSM_Idle(void)
             }
             else              /*The buffer of data is full,so clear it and initialize relevant variables*/
             {
-              /*Tell the sender do not send new message!*/
+              /*Tell the sender do not send any new message!*/
               AntQueueBroadcastMessage("FULL!");
               
               /*Show that the last message will display again*/
@@ -277,17 +287,17 @@ static void UserAppSM_Idle(void)
                 u8CursorPosition++;
               }
               
-              AfterDecrypt[i] = '\0' ;
+              au8AfterDecrypt[i] = '\0' ;
               i = 0;
               
               /*Clear the buffer*/
-             for(u8 j = 0; j < TotalChars; j++)
+             for(u8 j = 0; j < u16TotalChars; j++)
              {
                au8DataContent[j] = 0;
              }
              au8DataContent_Pointer = au8DataContent;
                          
-              TotalChars = 0;                           /*Clear the number*/                  
+              u16TotalChars = 0;                           /*Clear the number*/                  
             }
           }
         }               
@@ -301,9 +311,9 @@ static void UserAppSM_Idle(void)
       if(WasButtonPressed(BUTTON0))
     {
       ButtonAcknowledge(BUTTON0);
-      LedOff(GREEN);
+      LedOff(GREEN);                                  /*Clear the state of end*/
       
-      TotalChars = 0;                                       /*Clear the number*/
+      u16TotalChars = 0;                                       /*Clear the number*/
       
       /*send acknowledge message*/
       AntQueueBroadcastMessage("CT!");                            /*Copy That!*/
@@ -324,7 +334,7 @@ static void UserAppSM_Idle(void)
     {
       /* Got the button, so complete one-time actions  */
       ButtonAcknowledge(BUTTON2);
-      
+      /*Close the channel*/
       AntCloseChannel();
       LedOff(BLUE);
       LedOn(RED);
