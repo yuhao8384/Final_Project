@@ -145,6 +145,7 @@ static bool bAutoMode     =     FALSE;                        //Automatic mode o
 static bool bReady        =     FALSE;                        //Automatic mode open and ready to sent
 static bool bFinish       =     FALSE;                        //Automatic mode open and finish to sent
 static bool bStart        =     FALSE;                        //Automatic mode open and start to sent
+static bool bTemp         =     FALSE;
 /*******************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
@@ -400,7 +401,7 @@ static void UserApp2SM_Idle(void)
       else
       {
         LCDMessage(LINE1_START_ADDR,G_au8AntApiCurrentData);
-        if(bAutoMode)
+        if(bAutoMode || bTemp)
         {
           bReady = TRUE;
         }
@@ -529,7 +530,8 @@ static void UserApp2SM_Idle(void)
         }
         else
         {
-          bReady  = TRUE;
+          bTemp   =   TRUE;
+          bReady  =   TRUE;
           bStart  =   TRUE;
           bFinish =   FALSE;
           LedBlink(WHITE, LED_2HZ);
@@ -643,6 +645,7 @@ static void UserApp2SM_Idle(void)
   //message was sent ,clean screen and turn off led and prepare for next transport
   if(bFinish)
   {
+    bTemp   = FALSE;
     bFinish = FALSE;
     LedOff(GREEN);
     LedOff(WHITE);
