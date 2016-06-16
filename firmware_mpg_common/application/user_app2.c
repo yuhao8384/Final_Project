@@ -520,9 +520,12 @@ static void UserApp2SM_Idle(void)
       }
       //Manual mode
       else
-      { 
+      {
+        strcat(u8Character, u8MorseCode3);
+        u8CharacterPointer++;
+        u8CharacterCounter++;        
         if(u8CharacterCounter < 7)
-        {        
+        { 
           u8SentMessage(u8Character, u8CharacterCounter);            //Sent message
           u8CharacterCounter = 0;
           u8CharacterPointer = u8Character;                         //Make the pointer back to the initial position         
