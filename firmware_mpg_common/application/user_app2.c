@@ -2,17 +2,19 @@
 File: user_app2.c                                                                
 
 -------------------------------------------------------------------------------------------------------------------
-To start a new task using this user_app2 as a template:
- 1. Copy both user_app2.c and user_app2.h to the Application directory
- 2. Rename the files yournewtaskname.c and yournewtaskname.h
- 3. Add yournewtaskname.c and yournewtaskname.h to the Application Include and Source groups in the IAR project
- 4. Use ctrl-h (make sure "Match Case" is checked) to find and replace all instances of "user_app2" with "yournewtaskname"
- 5. Use ctrl-h to find and replace all instances of "UserApp2" with "YourNewTaskName"
- 6. Use ctrl-h to find and replace all instances of "USER_APP2" with "YOUR_NEW_TASK_NAME"
- 7. Add a call to YourNewTaskNameInitialize() in the init section of main
- 8. Add a call to YourNewTaskNameRunActiveState() in the Super Loop section of main
- 9. Update yournewtaskname.h per the instructions at the top of yournewtaskname.h
-10. Delete this text (between the dashed lines) and update the Description below to describe your task
+Sender mode struction:
+1.If BUTTON0 is pressed ,the orange led turn on and input code '.',else it will be turn off. 
+2.If button0 is held pressed for 500ms,then turn on the purple led and input code '-', else it will be turn off.
+3.If BUTTON1 is pressed ,translate morse code into character
+4.The button1 is held pressed for 500ms, turn on the cyan led and sent message
+5.The BUTTON2 is used to delete the wrong character or morse code,and when the buffer is empty, switch automatic 
+  and Manual 
+6.The button3 is pressed,then the  channel state will be turn.
+  If the channel is open ,the red led will blink at the rate of 2HZ else the red led will be turn off.
+
+7.On Manual mode,if the character count is more than seven,then led white blink at 2Hz.
+  On Autommatic mode, if the character count is more than seven,then led Green blink at 2Hz.
+  when the message was sent,led white and green are all turn off,at the same time clean screen.
 -------------------------------------------------------------------------------------------------------------------
 
 Description:
@@ -71,11 +73,12 @@ static u8 u8MessageSent[USER_INPUT_BUFFER_SIZE]   = "xxxxxxxx";                 
 static u8 u8MorseCode1[]    =   ".";                         
 static u8 u8MorseCode2[]    =   "-";
 static u8 u8MorseCode3[]    =   " ";
-static u8 u8TipMessage1[]   =   "Master!";                //tip message
+static u8 u8TipMessage1[]   =   "Sender!";                //tip message
 static u8 u8ErrorMessage[]  =   "Error!";                 //error message
 static u8 u8AckMessage[]    =   "RD!";                    //ACK message
 
-static u8 *u8CharacterPointer = u8Character;              
+static u8 *u8CharacterPointer = u8Character; 
+static u8 *u8CharacterLCDPointer = u8Character;
 static u8 u8CharacterCounter = 0;                         //number of characts
 static u8 u8MorseCounter = 0;
 
@@ -153,8 +156,13 @@ Function Definitions
 /*----------------------------------------------------------------------------------------------------------------*/
 /* Protected functions                                                                                            */
 /*----------------------------------------------------------------------------------------------------------------*/
-/*Transform morse code into character*/
-//Please input correct code,otherwise you will get a wrong character
+/*Function: UserApp2Initialize
+Description: translate morse code to character
+Requires:Please input correct code,otherwise you will get a wrong character
+  -
+Promises:
+  - 
+*/
 static u8 MorseToChar(u8 *u8String, u8 u8Counter)
 {
   u8 u8Temp = 0;
@@ -172,7 +180,14 @@ static u8 MorseToChar(u8 *u8String, u8 u8Counter)
   return u8MorseCode[u8Temp][7];
 }
 /*----------------------------------------------------------------------------------------------------------------*/
-/*The encryption algorithm*///************///*From the first character,An odd number of character ascii increase by one and An even number of character ascii decrease by one*/
+/*Function: UserApp2Initialize
+Description: From the first character,An odd number of character ascii increase by one and An even number of 
+             character ascii decrease by one
+Requires:
+  -
+Promises:
+  - 
+*/
 static void u8Encrypt(u8 *u8String1, u8 *u8String2)
 {
   /*Defined a empty string*/
@@ -197,7 +212,13 @@ static void u8Encrypt(u8 *u8String1, u8 *u8String2)
   }  
 } 
 /*---------------------------------------------------------------------------------------------------------------*/
-/*Message Manually sent fuction*/
+/*Function: UserApp2Initialize
+Description: Characters  will sent to receiver.
+Requires:
+  -
+Promises:
+  - 
+*/
 static void u8SentMessage(u8 *u8String, u8 u8Counter)
 {
   u8 u8StringTemp[] = "********";
@@ -218,7 +239,13 @@ static void u8SentMessage(u8 *u8String, u8 u8Counter)
   }
 }
 /*---------------------------------------------------------------------------------------------------------------*/
-/*Message Autosent fuction*/
+/*Function: UserApp2Initialize
+Description: Characters  will auto sent to receiver.
+Requires:
+  -
+Promises:
+  - 
+*/
 static u8 *AutoSent(u8* u8Pointer , u8 *u8String)
 {
   u8 u8StringTemp[] = "********";
@@ -245,9 +272,31 @@ static u8 *AutoSent(u8* u8Pointer , u8 *u8String)
   return u8Pointer;
 }
 /*---------------------------------------------------------------------------------------------------------------*/
-static void LCDRollDisplay(u8 *string)
+/*Function: UserApp2Initialize
+Description: Characters  rolling display at screen
+Requires:
+  -
+Promises:
+  - 
+*/
+static void LCDRollDisplay(u8 *string, u8 *u8Pointer)
 {
-  
+  u8 u8StringTemp[] = "********************"; 
+  for(u8 i = 0; i < 20; i++)
+  {
+    u8StringTemp[i] = 0;    
+  }
+  for(u8 j = 0; j < 20; j++)
+  {
+    u8StringTemp[j] = *u8Pointer;
+    u8Pointer++;    
+    if(!(*u8Pointer))
+    {
+      break;
+    }
+  }
+  LCDClearChars(LINE2_START_ADDR, 20);
+  LCDMessage(LINE2_START_ADDR, u8StringTemp);  
 }
 /*----------------------------------------------------------------------------------------------------------------
 Function: UserApp2Initialize
@@ -399,7 +448,7 @@ static void UserApp2SM_Idle(void)
     /*To prevent press input many times*/
     if(u16BlinkCounter > 600)
     {     
-      u8Morse[--u8MorseCounter] = '\0';             //clear charract when the button was pressed
+      u8Morse[--u8MorseCounter] = 0;             //clear charract when the button was pressed
       strcat(u8Morse, u8MorseCode2);
       u8MorseCounter++;
       u16BlinkCounter = 0;
@@ -448,8 +497,8 @@ static void UserApp2SM_Idle(void)
       {
         LCDClearChars(LINE2_START_ADDR, 20);        
       }
-      LCDMessage(LINE2_START_ADDR+(u8CharacterCounter-1)%20, u8CharacterPointer);                                  
-      u8CharacterPointer++;
+      LCDMessage(LINE2_START_ADDR+(u8CharacterCounter-1)%20, u8CharacterPointer);
+      u8CharacterPointer++;     
     }   
   }
 ////////////////////////////////////////////////////////////////////////////////
@@ -458,7 +507,7 @@ static void UserApp2SM_Idle(void)
     LedOn(CYAN);    
     if(u16BlinkCounter > 1200)
     {  
-      u16BlinkCounter = 0;
+      u16BlinkCounter = 0;     
       //Automatic mode
       if(bAutoMode)
       {
@@ -470,14 +519,21 @@ static void UserApp2SM_Idle(void)
       }
       //Manual mode
       else
-      {
-        if(u8CharacterCounter < 7 && u8CharacterCounter)
+      { 
+        if(u8CharacterCounter < 7)
         {        
           u8SentMessage(u8Character, u8CharacterCounter);            //Sent message
-          LedBlink(BLUE, LED_4HZ);
           u8CharacterCounter = 0;
-          u8CharacterPointer = u8Character;                          //Make the pointer back to the initial position         
+          u8CharacterPointer = u8Character;                         //Make the pointer back to the initial position         
           LCDCommand(LCD_CLEAR_CMD);
+        }
+        else
+        {
+          bReady  = TRUE;
+          bStart  =   TRUE;
+          bFinish =   FALSE;
+          LedBlink(WHITE, LED_2HZ);
+          u8CharacterPointer = u8Character;           
         }
       }
     }
@@ -539,15 +595,6 @@ static void UserApp2SM_Idle(void)
   else
   {
     LedOff(BLUE);
-    if(u8CharacterCounter == 7)
-    {       
-      u8SentMessage(u8Character, u8CharacterCounter);
-      u8CharacterPointer = u8Character;
-      for(u8 i =0 ;i < 8;i++)
-      {
-       u8Character[i]  = 0;
-      }
-    }
   }
 /*-------------------------------------------------------------------------------------------------------------------*/
   /*If I receive an ACK, sent next message*/
@@ -558,32 +605,47 @@ static void UserApp2SM_Idle(void)
     {      
       u8CharacterPointer = AutoSent(u8CharacterPointer, u8MessageSent);
       u8CharacterCounter -= 7;
-    }
-    else
-    {
-      if(u8CharacterCounter)
+      if(u8CharacterCounter == 0)
       {
-        u8CharacterPointer = AutoSent(u8CharacterPointer, u8MessageSent);
-        u8CharacterCounter = 0;
         bFinish = TRUE;
         bStart = FALSE;
         u8CharacterPointer = u8Character;
       }
     }
+    else if(u8CharacterCounter)
+    {
+      u8CharacterPointer = AutoSent(u8CharacterPointer, u8MessageSent);
+      u8CharacterCounter = 0;
+      bFinish = TRUE;
+      bStart = FALSE;
+      u8CharacterPointer = u8Character;
+    }
   }
 /*-------------------------------------------------------------------------------------------------------------------*/ 
+  //If the characters is too long ,rolling display on LCD  
   if(u16BlinkCounter%200 == 0)
   {
-    /*if(bStart)
+    if(bStart && (!bFinish))
     {
-      LCDRollDisplay(u8Character);
-    }*/
-        
-  } 
+      if(strlen(u8Character) > 20 )
+      LCDRollDisplay(u8Character, u8CharacterLCDPointer);
+      if(*(u8CharacterLCDPointer+1))
+      {       
+        u8CharacterLCDPointer++;
+      }
+      else
+      {
+        u8CharacterLCDPointer = u8Character;
+      }      
+    }       
+  }
+/*-------------------------------------------------------------------------------------------------------------------*/ 
+  //message was sent ,clean screen and turn off led and prepare for next transport
   if(bFinish)
   {
     bFinish = FALSE;
     LedOff(GREEN);
+    LedOff(WHITE);
     LCDCommand(LCD_CLEAR_CMD);
     for(u8 i = 0; i < USER_INPUT_BUFFER_SIZE; i++)
     {
