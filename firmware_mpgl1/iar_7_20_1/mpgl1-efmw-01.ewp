@@ -2044,9 +2044,6 @@
       <file>
         <name>$PROJ_DIR$\..\..\firmware_mpg_common\application\user_app.h</name>
       </file>
-      <file>
-        <name>$PROJ_DIR$\..\..\firmware_mpg_common\application\user_app2.h</name>
-      </file>
     </group>
     <group>
       <name>Source</name>
@@ -2058,9 +2055,6 @@
       </file>
       <file>
         <name>$PROJ_DIR$\..\..\firmware_mpg_common\application\user_app.c</name>
-      </file>
-      <file>
-        <name>$PROJ_DIR$\..\..\firmware_mpg_common\application\user_app2.c</name>
       </file>
     </group>
   </group>
