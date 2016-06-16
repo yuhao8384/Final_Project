@@ -67,8 +67,8 @@ void main(void)
   SdCardInitialize();
 
   /* Application initialization */
-  UserAppInitialize();
-  UserApp2Initialize();
+    UserAppInitialize();
+    UserApp2Initialize();
   /* Exit initialization */
   SystemStatusReport();
   G_u32SystemFlags &= ~_SYSTEM_INITIALIZING;
