@@ -1,19 +1,8 @@
 /**********************************************************************************************************************
 File: user_app.h                                                                
 
-----------------------------------------------------------------------------------------------------------------------
-To start a new task using this user_app as a template:
-1. Follow the instructions at the top of user_app.c
-2. Use ctrl-h to find and replace all instances of "user_app" with "yournewtaskname"
-3. Use ctrl-h to find and replace all instances of "UserApp" with "YourNewTaskName"
-4. Use ctrl-h to find and replace all instances of "USER_APP" with "YOUR_NEW_TASK_NAME"
-5. Add #include yournewtaskname.h" to configuration.h
-6. Add/update any special configurations required in configuration.h (e.g. peripheral assignment and setup values)
-7. Delete this text (between the dashed lines)
-----------------------------------------------------------------------------------------------------------------------
-
 Description:
-Header file for yournewtaskname.c
+Header file for user_app.c
 
 **********************************************************************************************************************/
 
@@ -39,7 +28,7 @@ Constants / Definitions
 #define ANT_FREQUENCY_USERAPP           (u8)50                // 2400MHz + this number 0 - 99 MHz
 #define ANT_TX_POWER_USERAPP            RADIO_TX_POWER_0DBM   // RADIO_TX_POWER_0DBM, RADIO_TX_POWER_MINUS5DBM, RADIO_TX_POWER_MINUS10DBM, RADIO_TX_POWER_MINUS20DBM
 
-#define BufferSize                      (u16)400              //The size of au8DataContent
+#define u16BufferSize                   (u16)400              //The size of au8DataContent
 
 /**********************************************************************************************************************
 Function Declarations

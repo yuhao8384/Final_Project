@@ -1,21 +1,9 @@
 
 /**********************************************************************************************************************
 File: user_app.c                                                                
-----------------------------------------------------------------------------------------------------------------------
-To start a new task using this user_app as a template:
- 1. Copy both user_app.c and user_app.h to the Application directory
- 2. Rename the files yournewtaskname.c and yournewtaskname.h
- 3. Add yournewtaskname.c and yournewtaskname.h to the Application Include and Source groups in the IAR project
- 4. Use ctrl-h (make sure "Match Case" is checked) to find and replace all instances of "user_app" with "yournewtaskname"
- 5. Use ctrl-h to find and replace all instances of "UserApp" with "YourNewTaskName"
- 6. Use ctrl-h to find and replace all instances of "USER_APP" with "YOUR_NEW_TASK_NAME"
- 7. Add a call to YourNewTaskNameInitialize() in the init section of main
- 8. Add a call to YourNewTaskNameRunActiveState() in the Super Loop section of main
- 9. Update yournewtaskname.h per the instructions at the top of yournewtaskname.h
-10. Delete this text (between the dashed lines) and update the Description below to describe your task
-----------------------------------------------------------------------------------------------------------------------
+
 Description:
-This is a user_app.c file template 
+This is a user_app.c file of Modern Telegram.
 ------------------------------------------------------------------------------------------------------------------------
 API:
 Public functions:
@@ -116,7 +104,6 @@ void UserAppInitialize(void)
   LCDCommand(LCD_HOME_CMD);
   /*Display the cursor */
   LCDCommand(LCD_DISPLAY_CMD | LCD_DISPLAY_ON | LCD_DISPLAY_CURSOR | LCD_DISPLAY_BLINK);
-
   
    /* Configure ANT for this application */
   G_stAntSetupData.AntChannel          = ANT_CHANNEL_USERAPP;
@@ -176,7 +163,7 @@ State Machine Function Definitions
 /* Wait for a message to be queued */
 static void UserAppSM_Idle(void)
 {
-  static u8 au8DataContent[BufferSize];        /*Buffer of Data*/
+  static u8 au8DataContent[u16BufferSize];        /*Buffer of Data*/
   static u8* au8DataContent_Pointer = au8DataContent;
   static bool bEND = FALSE;                    /*The END of a communication*/
   static u8 i ;                                /*A variable for the loop*/
@@ -221,16 +208,16 @@ static void UserAppSM_Idle(void)
           }
           
             i=0;
-            LedBlink( YELLOW, LED_4HZ );                /*The sender is typing*/
+            LedBlink( YELLOW, LED_4HZ );               /*The sender is typing*/
         
            /*It's new, so add it to au8DataContent*/
           while( au8AfterDecrypt[i] != '\0' )
           {
-            if( u16TotalChars < BufferSize )
+            if( u16TotalChars < u16BufferSize )
             {
               *au8DataContent_Pointer = au8AfterDecrypt[i];
               
-              if( au8AfterDecrypt[i] == '#' )             /*Look for '#' to finish*/
+              if( au8AfterDecrypt[i] == '#' )          /*Look for '#' to finish*/
               {
                 bEND = TRUE;
                 LedBlink( GREEN, LED_4HZ );            /*The sender stops typing*/
@@ -313,10 +300,14 @@ static void UserAppSM_Idle(void)
       ButtonAcknowledge(BUTTON0);
       LedOff(GREEN);                                  /*Clear the state of end*/
       
-      u16TotalChars = 0;                                       /*Clear the number*/
+      /*Clear the screen*/
+      LCDCommand(LCD_CLEAR_CMD);
+      u8CursorPosition = 0;
+      
+      u16TotalChars = 0;                              /*Clear the number*/
       
       /*send acknowledge message*/
-      AntQueueBroadcastMessage("CT!");                            /*Copy That!*/
+      AntQueueBroadcastMessage("CT!");                 /*Copy That!*/
     }
 }    
   
